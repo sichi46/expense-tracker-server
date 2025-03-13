@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User{
+id String @id @default(uuid())
+email String @unique
+password String
+name String?
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+// Relationships
+tranactions Transaction[]
+catgories Category[]
+budgets Budget[]
+fileUploads FileUpload[]
+financialGoals FinancialGoal[]
+}
+
+model Transaction{
+  id String @id @default(uuid())
+  amount Float
+  Description String
+  date DateTime
+  type String  // 'income' or 'expense'
+  paymentMethod String // 'cash' or 'card' or 'mobile money'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  userId String
+  user User @relation(fields: [userId], references: [id])
+
+  // optional relationships
+  categoryId String?
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  fileUploadId String?
+  fileUpload FileUpload? @relation(fields: [fileUploadId], references: [id])
+
+  @@index([userId])
+  @@index ([categoryId])
+  @@index ([date])
+}
+
+model Category{
+  id String @id @default(uuid())
+  name String
+  color String? // For UI display purposes
+  icon String? //url to icon
+  type String // 'income' or 'expense'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  userId String
+  user User @relation(fields: [userId], references: [id])
+
+  transactions Transaction[]
+  budgets Budget[]
+
+  @@unique([userId, name])  //Ensure category names are unique per user
+  @@index([userId])
+}
+
+model Budget{
+  id String @id @default(uuid())
+  amount Float
+  period String // 'daily' or 'weekly' or 'monthly' or 'yearly'
+  startDate DateTime
+  endDate DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  UserId String 
+  user User @relation(fields: [UserId], references: [id])
+
+  categoryId String
+  category Category @relation(fields: [categoryId], references: [id])
+  @@index([UserId])
+  @@index([categoryId])
+}
+
+
+model FileUpload{
+  id String @id @default(uuid())
+  filename String
+  originalFilename String
+  mimetype String
+  size Int
+  path String
+  fileTypes String // 'image' or 'pdf' or 'csv' or 'excel'
+  description String?
+  uploadedAt DateTime @default(now())
+
+  // Relationships
+  userId String
+  user User @relation(fields: [userId], references: [id])
+
+  // A file can be linked to multiple transactions
+  transactions Transaction[]
+
+  @@index([userId])
+}
+
+model FinancialGoal{
+  id String @id @default(uuid())
+  name String
+  targetAmount Float
+  currentAmount Float @default(0)
+  targetDate DateTime?
+  completed Boolean @default(false)
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  userId String
+  user User @relation(fields: [userId],  references: [id])
+
+  @@index([userId])
+}
